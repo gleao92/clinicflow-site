@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ClinicFlow — Sistema de gestão para clínicas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Agenda, prontuário eletrônico com assinatura, receitas, atestados e lembretes por WhatsApp. Teste o ClinicFlow grátis por 7 dias, sem cartão.">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: coluna central de 1120px; herói em duas colunas com a agenda do produto como imagem principal;
+   faixas de largura total só onde o conteúdo muda de natureza (segurança, chamada final). */
+:root {
+  --ink: #0f172a;
+  --muted: #5b6577;
+  --line: #e2e8f0;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --brand: #1d4ed8;
+  --brand-deep: #1e40af;
+  --brand-soft: #eff6ff;
+  --brand-line: #dbeafe;
+  --night: #0b1222;
+  --night-ink: #e2e8f0;
+  --night-muted: #8b98ad;
+  --ok: #166534;
+  --ok-bg: #dcfce7;
+  --warn: #854d0e;
+  --warn-bg: #fef9c3;
+  --bad: #991b1b;
+  --bad-bg: #fee2e2;
+  --wa: #128c4a;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -12px rgba(15, 23, 42, .18);
+  --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'DM Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --gutter-l: max(20px, env(safe-area-inset-left, 0px));
+  --gutter-r: max(20px, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e8edf5; --muted: #98a3b5; --line: #223047; --bg: #0b1222; --surface: #111a2e;
+    --brand: #4f7df3; --brand-deep: #8fb0ff; --brand-soft: #14213d; --brand-line: #1f3360;
+    --night: #070d1a; --night-ink: #e2e8f0; --night-muted: #8b98ad;
+    --ok: #86efac; --ok-bg: #12301f; --warn: #fde68a; --warn-bg: #3a2f0d; --bad: #fca5a5; --bad-bg: #3b1515;
+    --wa: #3ddc84;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 40px -16px rgba(0, 0, 0, .7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e8edf5; --muted: #98a3b5; --line: #223047; --bg: #0b1222; --surface: #111a2e;
+  --brand: #4f7df3; --brand-deep: #8fb0ff; --brand-soft: #14213d; --brand-line: #1f3360;
+  --night: #070d1a; --night-ink: #e2e8f0; --night-muted: #8b98ad;
+  --ok: #86efac; --ok-bg: #12301f; --warn: #fde68a; --warn-bg: #3a2f0d; --bad: #fca5a5; --bad-bg: #3b1515;
+  --wa: #3ddc84;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 16px 40px -16px rgba(0, 0, 0, .7);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { margin: 0; line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: var(--gutter-l); padding-right: var(--gutter-r); }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+.section { padding-block: 88px; }
+.section-head { max-width: 640px; display: grid; gap: 12px; margin-bottom: 48px; }
+.section-head h2 { font-size: clamp(28px, 4vw, 40px); }
+.section-head p { color: var(--muted); font-size: 17px; }
+
+/* Botões */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 20px; border-radius: 10px;
+  font: 600 15px/1 var(--font); text-decoration: none; cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-deep); }
+:root[data-theme="dark"] .btn-primary:hover { background: #3b6be0; }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
+.btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* Navegação */
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 60; background: var(--bg);
+}
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 18px; }
+.logo { width: 34px; height: 34px; border-radius: 9px; background: var(--brand); display: grid; place-items: center; flex-shrink: 0; }
+.logo svg { width: 19px; height: 19px; }
+.nav-links { display: flex; align-items: center; gap: 28px; font-size: 14px; font-weight: 500; color: var(--muted); }
+.nav-links a { text-decoration: none; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta { display: flex; align-items: center; gap: 10px; }
+.nav-cta .btn { padding: 9px 16px; font-size: 14px; }
+.nav-login { font-size: 14px; font-weight: 600; text-decoration: none; color: var(--ink); padding: 9px 6px; }
+
+/* Herói */
+.hero { padding-block: 72px 88px; }
+.hero .wrap { display: grid; grid-template-columns: 1.02fr 1fr; gap: 56px; align-items: center; }
+.hero-copy { display: grid; gap: 24px; min-width: 0; }
+.hero h1 { font-size: clamp(36px, 5.4vw, 58px); font-weight: 700; }
+.hero h1 em { font-style: normal; color: var(--brand); }
+.hero-lead { font-size: 18px; color: var(--muted); max-width: 520px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-note { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: var(--muted); }
+.hero-note span { display: inline-flex; align-items: center; gap: 6px; }
+.hero-note svg { width: 16px; height: 16px; color: var(--ok); }
+
+/* Agenda do produto (imagem principal) */
+.app-shot {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: var(--shadow); overflow: hidden; min-width: 0;
+}
+.shot-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.shot-bar b { font-size: 15px; }
+.shot-date { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.shot-kpis { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); }
+.shot-kpis div { padding: 12px 18px; display: grid; gap: 2px; }
+.shot-kpis div + div { border-left: 1px solid var(--line); }
+.shot-kpis small { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.shot-kpis strong { font-family: var(--mono); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.shot-list { list-style: none; margin: 0; padding: 6px 0; }
+.shot-row { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 10px 18px; }
+.shot-row + .shot-row { border-top: 1px dashed var(--line); }
+.shot-time { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.shot-who { min-width: 0; display: grid; }
+.shot-who b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shot-who span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pront { font-family: var(--mono); font-size: 11px; color: var(--brand-deep); background: var(--brand-soft); border: 1px solid var(--brand-line); padding: 0 6px; border-radius: 5px; }
+.pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.pill-ok { background: var(--ok-bg); color: var(--ok); }
+.pill-warn { background: var(--warn-bg); color: var(--warn); }
+.pill-bad { background: var(--bad-bg); color: var(--bad); }
+.shot-foot { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--bg); font-size: 13px; color: var(--muted); }
+.shot-foot svg { width: 16px; height: 16px; color: var(--wa); flex-shrink: 0; }
+
+/* Faixa de prova */
+.proof { border-block: 1px solid var(--line); background: var(--surface); }
+.proof .wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+.proof div { padding: 24px 20px; display: grid; gap: 4px; }
+.proof div + div { border-left: 1px solid var(--line); }
+.proof strong { font-size: 15px; }
+.proof span { font-size: 14px; color: var(--muted); }
+
+/* Módulos */
+.modules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.module { background: var(--surface); padding: 28px; display: grid; gap: 10px; align-content: start; }
+.module-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--brand-soft); color: var(--brand); display: grid; place-items: center; }
+.module-icon svg { width: 20px; height: 20px; }
+.module h3 { font-size: 18px; }
+.module p { color: var(--muted); font-size: 15px; }
+.module ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.module li::before { content: "— "; color: var(--brand); }
+
+/* Fluxo do paciente */
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; counter-reset: passo; }
+.flow-step { display: grid; gap: 10px; align-content: start; padding-top: 20px; border-top: 2px solid var(--line); }
+.flow-step:first-child { border-top-color: var(--brand); }
+.flow-step small { font-family: var(--mono); font-size: 12px; color: var(--brand); }
+.flow-step h3 { font-size: 17px; }
+.flow-step p { font-size: 15px; color: var(--muted); }
+
+/* Faixa de segurança */
+.secure { background: var(--night); color: var(--night-ink); }
+.secure .section-head p { color: var(--night-muted); }
+.secure .eyebrow { color: #8fb0ff; }
+.secure-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px 40px; }
+.secure-item { display: grid; gap: 8px; align-content: start; }
+.secure-item h3 { font-size: 17px; display: flex; align-items: center; gap: 10px; }
+.secure-item h3 svg { width: 18px; height: 18px; color: #8fb0ff; flex-shrink: 0; }
+.secure-item p { font-size: 15px; color: var(--night-muted); }
+
+/* Planos */
+.billing-toggle { display: inline-flex; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); gap: 4px; margin-bottom: 32px; }
+.billing-toggle button {
+  font: 600 14px/1 var(--font); color: var(--muted); background: transparent; border: 0;
+  padding: 10px 16px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+}
+.billing-toggle button[aria-pressed="true"] { background: var(--brand); color: #fff; }
+.save-tag { font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 2px 6px; border-radius: 5px; background: var(--ok-bg); color: var(--ok); }
+.billing-toggle button[aria-pressed="true"] .save-tag { background: rgba(255, 255, 255, .2); color: #fff; }
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+.plan { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 20px; position: relative; }
+.plan-featured { border: 2px solid var(--brand); box-shadow: var(--shadow); }
+.plan-flag { position: absolute; top: -12px; left: 28px; background: var(--brand); color: #fff; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+.plan-head { display: grid; gap: 6px; }
+.plan-head h3 { font-size: 20px; }
+.plan-head p { font-size: 14px; color: var(--muted); }
+.plan-price { display: grid; gap: 4px; }
+.plan-price .amount { display: flex; align-items: baseline; gap: 4px; }
+.plan-price .cur { font-size: 18px; font-weight: 600; }
+.plan-price .val { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.plan-price .per { font-size: 15px; color: var(--muted); }
+.plan-price small { font-size: 13px; color: var(--muted); min-height: 1.6em; }
+.plan-seats { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--brand-soft); color: var(--brand-deep); border: 1px solid var(--brand-line); }
+.plan ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 15px; }
+.plan li { display: grid; grid-template-columns: 18px 1fr; gap: 10px; align-items: start; }
+.plan li svg { width: 18px; height: 18px; margin-top: 3px; color: var(--brand); }
+.plan li.off { color: var(--muted); }
+.plan li.off svg { color: var(--line); }
+.plan .btn { margin-top: auto; width: 100%; }
+.plans-note { margin-top: 24px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.plans-note span { display: inline-flex; align-items: center; gap: 6px; }
+.plans-note svg { width: 16px; height: 16px; color: var(--ok); }
+
+/* Perguntas frequentes */
+.faq { max-width: 780px; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary {
+  list-style: none; cursor: pointer; padding: 20px 0; font-weight: 600; font-size: 17px;
+  display: flex; justify-content: space-between; gap: 16px; align-items: center;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-family: var(--mono); font-size: 20px; color: var(--brand); flex-shrink: 0; }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { padding-bottom: 20px; color: var(--muted); max-width: 66ch; }
+
+/* Chamada final */
+.final { padding-block: 0 88px; }
+.final-box {
+  background: var(--brand); color: #fff; border-radius: 20px; padding: 56px;
+  display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center;
+}
+.final-box h2 { font-size: clamp(26px, 3.6vw, 36px); }
+.final-box p { opacity: .85; margin-top: 10px; font-size: 17px; }
+.final-box .btn-primary { background: #fff; color: #1d4ed8; }
+.final-box .btn-primary:hover { background: #eff6ff; }
+.final-box .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, .4); }
+.final-box .btn-ghost:hover { border-color: #fff; color: #fff; }
+.final-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Rodapé */
+.footer { border-top: 1px solid var(--line); padding-block: 32px; font-size: 14px; color: var(--muted); }
+.footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+.footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
+.footer a { text-decoration: none; }
+.footer a:hover { color: var(--ink); }
+
+/* WhatsApp flutuante */
+.wa-float {
+  position: fixed; z-index: 40;
+  right: calc(20px + env(safe-area-inset-right, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  width: 54px; height: 54px; border-radius: 50%;
+  background: #25d366; color: #fff; display: grid; place-items: center;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, .35);
+  transition: transform .15s ease;
+}
+.wa-float:hover { transform: scale(1.06); }
+.wa-float svg { width: 28px; height: 28px; }
+
+/* Responsivo */
+@media (max-width: 960px) {
+  .hero .wrap { grid-template-columns: 1fr; gap: 40px; }
+  .modules, .secure-grid { grid-template-columns: repeat(2, 1fr); }
+  .flow { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; }
+  .plans { grid-template-columns: 1fr; max-width: 480px; }
+  .proof .wrap { grid-template-columns: repeat(2, 1fr); }
+  .proof div:nth-child(3) { border-left: 0; }
+  .proof div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .final-box { grid-template-columns: 1fr; padding: 40px 32px; }
+}
+@media (max-width: 760px) {
+  .nav-links { display: none; }
+  .nav-login { display: none; }
+}
+@media (max-width: 560px) {
+  .section { padding-block: 64px; }
+  .hero { padding-block: 40px 64px; }
+  .modules, .secure-grid, .flow { grid-template-columns: 1fr; }
+  .module { padding: 24px; }
+  .shot-kpis div { padding: 10px 12px; }
+  .shot-row { grid-template-columns: 46px 1fr auto; padding: 10px 14px; gap: 10px; }
+  .shot-bar, .shot-foot { padding-left: 14px; padding-right: 14px; }
+  .final-box { padding: 32px 24px; }
+  .hero-actions .btn, .final-actions .btn { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn, .wa-float { transition: none; }
+  .btn:hover, .wa-float:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Ícones reutilizados -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></symbol>
+    <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.5.2-.7.2-1.3.2-1.5-.1-.1-.3-.2-.6-.3zM12 21.8c-1.8 0-3.5-.5-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 0 1 2.2 12C2.2 6.6 6.6 2.2 12 2.2c2.6 0 5.1 1 6.9 2.9a9.7 9.7 0 0 1 2.9 6.9c0 5.4-4.4 9.8-9.8 9.8zm8.4-18.2A11.8 11.8 0 0 0 12 .2C5.5.2.2 5.5.2 12c0 2.1.5 4.1 1.6 5.9L.1 23.9l6.1-1.6c1.7.9 3.7 1.4 5.7 1.4 6.5 0 11.8-5.3 11.8-11.8 0-3.1-1.2-6.1-3.3-8.3z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h2M14 14h2M8 18h2"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-broom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11 3 21h12l-2-10M14 3l-3 8M6 21l1-4M10 21l.5-4"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.7-4 3-9 3s-9-1.3-9-3M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></symbol>
+    <symbol id="i-hospital" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7v15h20V7z"/><path d="M12 9v6M9 12h6"/></symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a href="#topo" class="brand" aria-label="ClinicFlow, início">
+      <span class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" opacity=".35"/><path d="M3 12h4l2-3 3 6 2-3h7"/></svg>
+      </span>
+      ClinicFlow
+    </a>
+    <nav class="nav-links" aria-label="Seções">
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#seguranca">Segurança</a>
+      <a href="#planos">Planos</a>
+      <a href="#duvidas">Dúvidas</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="nav-login" data-app="login" href="#">Entrar</a>
+      <a class="btn btn-primary" data-app="cadastro" href="#">Testar grátis</a>
+    </div>
+  </div>
+</header>
+
+<main id="topo">
+
+  <!-- Herói -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="eyebrow">Sistema de gestão para clínicas</span>
+        <h1>Agenda cheia, prontuário em ordem e <em>menos faltas</em> de pacientes.</h1>
+        <p class="hero-lead">
+          O ClinicFlow junta agenda, prontuário eletrônico com assinatura, receitas, atestados e lembretes por WhatsApp
+          num sistema só. Funciona no navegador, no computador da recepção ou no celular do profissional.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" data-app="cadastro" href="#">
+            Testar grátis por 7 dias
+            <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+          </a>
+          <a class="btn btn-ghost" data-wa="Olá! Quero conhecer o ClinicFlow." href="#">
+            <svg aria-hidden="true" style="color:var(--wa)"><use href="#i-wa"/></svg>
+            Falar com a gente
+          </a>
+        </div>
+        <div class="hero-note">
+          <span><svg aria-hidden="true"><use href="#i-check"/></svg>Sem cartão de crédito</span>
+          <span><svg aria-hidden="true"><use href="#i-check"/></svg>Pronto em 5 minutos</span>
+          <span><svg aria-hidden="true"><use href="#i-check"/></svg>Cancele quando quiser</span>
+        </div>
+      </div>
+
+      <!-- Recorte da agenda do sistema -->
+      <figure class="app-shot" aria-label="Exemplo da agenda do dia no ClinicFlow" style="margin:0">
+        <div class="shot-bar">
+          <b>Agenda de hoje</b>
+          <span class="shot-date">ter · 14 out</span>
+        </div>
+        <div class="shot-kpis">
+          <div><small>Consultas</small><strong>12</strong></div>
+          <div><small>Confirmadas</small><strong>9</strong></div>
+          <div><small>Na fila</small><strong>3</strong></div>
+        </div>
+        <ul class="shot-list">
+          <li class="shot-row">
+            <span class="shot-time">08:00</span>
+            <span class="shot-who"><b>Mariana Alves</b><span>Retorno · <span class="pront">000214-7</span></span></span>
+            <span class="pill pill-ok">Confirmado</span>
+          </li>
+          <li class="shot-row">
+            <span class="shot-time">08:30</span>
+            <span class="shot-who"><b>João Pedro Souza</b><span>Primeira consulta</span></span>
+            <span class="pill pill-ok">Confirmado</span>
+          </li>
+          <li class="shot-row">
+            <span class="shot-time">09:15</span>
+            <span class="shot-who"><b>Luíza Ferreira</b><span>Avaliação · <span class="pront">000187-2</span></span></span>
+            <span class="pill pill-warn">Pendente</span>
+          </li>
+          <li class="shot-row">
+            <span class="shot-time">10:00</span>
+            <span class="shot-who"><b>Carlos Henrique Lima</b><span>Retorno · <span class="pront">000095-0</span></span></span>
+            <span class="pill pill-bad">Cancelou</span>
+          </li>
+        </ul>
+        <div class="shot-foot">
+          <svg aria-hidden="true"><use href="#i-wa"/></svg>
+          Horário das 10:00 oferecido para a fila de espera por WhatsApp
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Faixa de prova -->
+  <div class="proof" aria-label="Destaques">
+    <div class="wrap">
+      <div><strong>Lembrete automático</strong><span>O paciente confirma ou cancela pelo WhatsApp</span></div>
+      <div><strong>Fila de espera</strong><span>Horário vago vai para quem está esperando</span></div>
+      <div><strong>Prontuário assinado</strong><span>Assinatura eletrônica e histórico de versões</span></div>
+      <div><strong>Para toda a equipe</strong><span>Gestor, profissional e recepção com acessos próprios</span></div>
+    </div>
+  </div>
+
+  <!-- Funcionalidades -->
+  <section class="section" id="funcionalidades">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Funcionalidades</span>
+        <h2>Tudo o que a clínica usa no dia a dia, no mesmo lugar</h2>
+        <p>Da marcação da consulta ao documento entregue ao paciente, sem planilha, caderno ou sistema paralelo.</p>
+      </div>
+
+      <div class="modules">
+        <article class="module">
+          <span class="module-icon"><svg aria-hidden="true"><use href="#i-calendar"/></svg></span>
+          <h3>Agenda</h3>
+          <p>Grade por profissional, com status de cada horário e visão do dia para a recepção.</p>
+          <ul><li>Confirmação pelo próprio paciente</li><li>Lembretes por WhatsApp</li><li>Fila de espera para encaixes</li></ul>
+        </article>
+        <article class="module">
+          <span class="module-icon"><svg aria-hidden="true"><use href="#i-pen"/></svg></span>
+          <h3>Prontuário eletrônico</h3>
+          <p>Registros por atendimento, anexos e linha do tempo completa de cada paciente.</p>
+          <ul><li>Assinatura eletrônica</li><li>Número de prontuário com dígito verificador</li><li>Histórico de alterações</li></ul>
+        </article>
+        <article class="module">
+          <span class="module-icon"><svg aria-hidden="true"><use href="#i-file"/></svg></span>
+          <h3>Documentos</h3>
+          <p>Gere e imprima os documentos do atendimento com os dados do paciente já preenchidos.</p>
+          <ul><li>Receita simples</li><li>Atestado médico</li><li>Encaminhamento</li></ul>
+        </article>
+        <article class="module">
+          <span class="module-icon"><svg aria-hidden="true"><use href="#i-users"/></svg></span>
+          <h3>Pacientes</h3>
+          <p>Cadastro completo com validação de telefone, e-mail e Cartão Nacional de Saúde (CNS).</p>
+          <ul><li>Histórico de consultas</li><li>Busca rápida na recepção</li><li>Exportação em Excel e PDF</li></ul>
+        </article>
+        <article class="module">
+          <span class="module-icon"><svg aria-hidden="true"><use href="#i-hospital"/></svg></span>
+          <h3>Segurança do paciente</h3>
+          <p>Registre ocorrências e sinalizações no formato que a vigilância sanitária pede.</p>
+          <ul><li>Notificação de ocorrências</li><li>Sinalização de riscos</li><li>Apoio às exigências da ANVISA</li></ul>
+        </article>
+        <article class="module">
+          <span class="module-icon"><svg aria-hidden="true"><use href="#i-broom"/></svg></span>
+          <h3>Facilities e relatórios</h3>
+          <p>Controle de limpeza, manutenções e checklists, com indicadores para o gestor.</p>
+          <ul><li>Painel do gestor</li><li>Checklists de rotina</li><li>Relatórios da clínica</li></ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Como funciona -->
+  <section class="section" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Como funciona</span>
+        <h2>Da marcação ao retorno, sem retrabalho</h2>
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <small>Marcação</small>
+          <h3>A recepção agenda</h3>
+          <p>Escolhe o profissional e o horário livre, e o paciente entra na agenda do dia.</p>
+        </div>
+        <div class="flow-step">
+          <small>Véspera</small>
+          <h3>O paciente confirma</h3>
+          <p>Recebe o lembrete no WhatsApp e confirma ou cancela com um toque.</p>
+        </div>
+        <div class="flow-step">
+          <small>Atendimento</small>
+          <h3>O profissional registra</h3>
+          <p>Preenche o prontuário, assina e gera receita ou atestado na mesma tela.</p>
+        </div>
+        <div class="flow-step">
+          <small>Depois</small>
+          <h3>O gestor acompanha</h3>
+          <p>Vê faltas, confirmações e produção da equipe no painel e nos relatórios.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Segurança -->
+  <section class="section secure" id="seguranca">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Segurança e LGPD</span>
+        <h2>Dados de saúde exigem mais cuidado. O ClinicFlow foi feito para isso.</h2>
+        <p>Informação de paciente é dado sensível pela LGPD. A proteção vem de fábrica, não como opcional.</p>
+      </div>
+      <div class="secure-grid">
+        <div class="secure-item">
+          <h3><svg aria-hidden="true"><use href="#i-lock"/></svg>Dados separados por clínica</h3>
+          <p>Cada clínica só enxerga os próprios dados, com regras aplicadas direto no banco de dados.</p>
+        </div>
+        <div class="secure-item">
+          <h3><svg aria-hidden="true"><use href="#i-key"/></svg>Login em duas etapas</h3>
+          <p>Verificação por aplicativo autenticador, bloqueio após tentativas erradas e sessão que expira sozinha.</p>
+        </div>
+        <div class="secure-item">
+          <h3><svg aria-hidden="true"><use href="#i-eye"/></svg>Trilha de auditoria</h3>
+          <p>Quem abriu, criou ou alterou cada prontuário fica registrado, com data e hora.</p>
+        </div>
+        <div class="secure-item">
+          <h3><svg aria-hidden="true"><use href="#i-shield"/></svg>Acesso por perfil</h3>
+          <p>Recepção, profissional e gestor veem apenas o que precisam para o próprio trabalho.</p>
+        </div>
+        <div class="secure-item">
+          <h3><svg aria-hidden="true"><use href="#i-db"/></svg>Backup e recuperação</h3>
+          <p>Cópias de segurança dos dados e dos anexos, com plano de recuperação testado.</p>
+        </div>
+        <div class="secure-item">
+          <h3><svg aria-hidden="true"><use href="#i-swap"/></svg>Padrão HL7 FHIR</h3>
+          <p>Exporte os dados clínicos num formato aberto, usado para troca de informação em saúde.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Planos -->
+  <section class="section" id="planos">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Planos</span>
+        <h2>Preço pelo tamanho da sua equipe</h2>
+        <p>Todos os planos começam com 7 dias grátis e têm agenda, pacientes e prontuário completos. Recepção e gestão não contam no limite de profissionais.</p>
+      </div>
+
+      <div class="billing-toggle" role="group" aria-label="Forma de cobrança">
+        <button type="button" id="bill-monthly" data-cycle="mensal" aria-pressed="true">Mensal</button>
+        <button type="button" id="bill-yearly" data-cycle="anual" aria-pressed="false">Anual <span class="save-tag">2 meses grátis</span></button>
+      </div>
+
+      <div class="plans">
+        <article class="plan">
+          <div class="plan-head">
+            <h3>Consultório</h3>
+            <p>Para quem atende sozinho e quer sair do papel.</p>
+          </div>
+          <div class="plan-price">
+            <span class="amount"><span class="cur">R$</span><span class="val" data-mensal="89" data-anual="74">89</span><span class="per">/mês</span></span>
+            <small data-mensal-note="Cobrado todo mês" data-anual-note="R$ 890 cobrados uma vez por ano">Cobrado todo mês</small>
+          </div>
+          <div class="plan-seats">1 profissional de saúde</div>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Agenda, pacientes e prontuário</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Assinatura eletrônica de prontuário</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Receitas, atestados e encaminhamentos</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>100 lembretes de WhatsApp por mês</li>
+            <li class="off"><svg aria-hidden="true"><use href="#i-minus"/></svg>Exportação FHIR e auditoria</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Suporte por e-mail</li>
+          </ul>
+          <a class="btn btn-ghost" data-app="cadastro" data-plano="consultorio" href="#">Começar teste grátis</a>
+        </article>
+
+        <article class="plan plan-featured">
+          <span class="plan-flag">Mais escolhido</span>
+          <div class="plan-head">
+            <h3>Clínica</h3>
+            <p>Para clínicas com recepção e vários profissionais.</p>
+          </div>
+          <div class="plan-price">
+            <span class="amount"><span class="cur">R$</span><span class="val" data-mensal="179" data-anual="149">179</span><span class="per">/mês</span></span>
+            <small data-mensal-note="Cobrado todo mês" data-anual-note="R$ 1.790 cobrados uma vez por ano">Cobrado todo mês</small>
+          </div>
+          <div class="plan-seats">Até 5 profissionais de saúde</div>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Tudo do Consultório</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>500 lembretes de WhatsApp por mês</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Fila de espera e painel do gestor</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Exportação FHIR e trilha de auditoria</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Segurança do paciente e facilities</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Suporte por WhatsApp</li>
+          </ul>
+          <a class="btn btn-primary" data-app="cadastro" data-plano="clinica" href="#">Começar teste grátis</a>
+        </article>
+
+        <article class="plan">
+          <div class="plan-head">
+            <h3>Clínica Plus</h3>
+            <p>Para clínicas maiores, com várias especialidades.</p>
+          </div>
+          <div class="plan-price">
+            <span class="amount"><span class="cur">R$</span><span class="val" data-mensal="329" data-anual="274">329</span><span class="per">/mês</span></span>
+            <small data-mensal-note="Cobrado todo mês" data-anual-note="R$ 3.290 cobrados uma vez por ano">Cobrado todo mês</small>
+          </div>
+          <div class="plan-seats">Até 15 profissionais de saúde</div>
+          <ul>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Tudo do Clínica</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>2.000 lembretes de WhatsApp por mês</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Ajuda para importar seus pacientes</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Treinamento da equipe por vídeo</li>
+            <li><svg aria-hidden="true"><use href="#i-check"/></svg>Suporte prioritário por WhatsApp</li>
+          </ul>
+          <a class="btn btn-ghost" data-app="cadastro" data-plano="plus" href="#">Começar teste grátis</a>
+        </article>
+      </div>
+
+      <div class="plans-note">
+        <span><svg aria-hidden="true"><use href="#i-check"/></svg>Pague por Pix, boleto ou cartão</span>
+        <span><svg aria-hidden="true"><use href="#i-check"/></svg>Sem taxa de instalação</span>
+        <span><svg aria-hidden="true"><use href="#i-check"/></svg>Mais de 15 profissionais? <a data-wa="Olá! Tenho uma clínica com mais de 15 profissionais e quero um orçamento do ClinicFlow." href="#" style="color:var(--brand);font-weight:600">Fale com a gente</a></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dúvidas -->
+  <section class="section" id="duvidas" style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Dúvidas</span>
+        <h2>Perguntas frequentes</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Como funciona o teste grátis?</summary>
+          <p>Você cria a conta da clínica em poucos minutos e usa todas as funções por 7 dias, sem cadastrar cartão. No fim do teste, escolhe um plano para continuar. Se não assinar, a conta é pausada e seus dados ficam guardados.</p>
+        </details>
+        <details>
+          <summary>Preciso instalar alguma coisa?</summary>
+          <p>Não. O ClinicFlow funciona no navegador, em qualquer computador, tablet ou celular com internet.</p>
+        </details>
+        <details>
+          <summary>Quais formas de pagamento vocês aceitam?</summary>
+          <p>Pix, boleto e cartão de crédito. No cartão, a cobrança é renovada automaticamente todo mês ou todo ano, conforme o plano escolhido.</p>
+        </details>
+        <details>
+          <summary>Posso cancelar quando quiser?</summary>
+          <p>Sim. Não há fidelidade nem multa. Ao cancelar, você continua usando até o fim do período já pago e pode exportar seus dados.</p>
+        </details>
+        <details>
+          <summary>Quem conta como profissional de saúde no limite do plano?</summary>
+          <p>Contam os usuários que atendem pacientes e assinam prontuários, como médicos, dentistas, psicólogos e fisioterapeutas. Usuários de recepção e de gestão não contam.</p>
+        </details>
+        <details>
+          <summary>Meus dados e os dos meus pacientes ficam seguros?</summary>
+          <p>Sim. Os dados de cada clínica ficam isolados, o acesso é protegido por senha e verificação em duas etapas, e toda abertura de prontuário fica registrada. Fazemos cópias de segurança regulares.</p>
+        </details>
+        <details>
+          <summary>Já uso outro sistema ou planilha. Consigo trazer meus pacientes?</summary>
+          <p>Sim. Fale com a gente pelo WhatsApp e ajudamos a importar sua lista de pacientes. No plano Clínica Plus, a importação está incluída.</p>
+        </details>
+        <details>
+          <summary>Serve para qual tipo de clínica?</summary>
+          <p>Para consultórios e clínicas de diversas especialidades, como clínica médica, odontologia, psicologia, fisioterapia e nutrição.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chamada final -->
+  <section class="final">
+    <div class="wrap">
+      <div class="final-box">
+        <div>
+          <h2>Comece hoje e veja sua agenda organizada ainda nesta semana.</h2>
+          <p>7 dias grátis, sem cartão e sem compromisso.</p>
+        </div>
+        <div class="final-actions">
+          <a class="btn btn-primary" data-app="cadastro" href="#">Testar grátis</a>
+          <a class="btn btn-ghost" data-wa="Olá! Quero tirar uma dúvida sobre o ClinicFlow." href="#">Tirar uma dúvida</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <span>© <span id="ano">2026</span> ClinicFlow · Feito em Goiás</span>
+    <nav aria-label="Rodapé">
+      <a href="#planos">Planos</a>
+      <a data-app="login" href="#">Entrar</a>
+    </nav>
+  </div>
+</footer>
+
+<a class="wa-float" data-wa="Olá! Quero conhecer o ClinicFlow." href="#" aria-label="Conversar no WhatsApp">
+  <svg aria-hidden="true"><use href="#i-wa"/></svg>
+</a>
+
+<script>
+  // Endereços do sistema e do WhatsApp: altere aqui ao mudar o domínio do app
+  var SITE = {
+    appUrl: 'https://app.clinicflow.opusnoa.com.br',
+    whatsapp: '5562982488018'
+  };
+
+  // Links para o app: cadastro leva o plano escolhido e o ciclo de cobrança
+  var ciclo = 'mensal';
+  function linkApp(el) {
+    var tipo = el.getAttribute('data-app');
+    if (tipo === 'login') return SITE.appUrl + '/';
+    var url = SITE.appUrl + '/?view=cadastro';
+    var plano = el.getAttribute('data-plano');
+    if (plano) url += '&plano=' + plano + '&ciclo=' + ciclo;
+    return url;
+  }
+  function atualizarLinks() {
+    document.querySelectorAll('[data-app]').forEach(function (el) { el.href = linkApp(el); });
+  }
+  document.querySelectorAll('[data-wa]').forEach(function (el) {
+    el.href = 'https://wa.me/' + SITE.whatsapp + '?text=' + encodeURIComponent(el.getAttribute('data-wa'));
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+  });
+
+  // Alternância mensal / anual
+  document.querySelectorAll('.billing-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      ciclo = btn.getAttribute('data-cycle');
+      document.querySelectorAll('.billing-toggle button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      document.querySelectorAll('.plan-price .val').forEach(function (v) {
+        v.textContent = v.getAttribute('data-' + ciclo);
+      });
+      document.querySelectorAll('.plan-price small').forEach(function (s) {
+        s.textContent = s.getAttribute('data-' + ciclo + '-note');
+      });
+      atualizarLinks();
+    });
+  });
+
+  atualizarLinks();
+  document.getElementById('ano').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
